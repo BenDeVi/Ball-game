@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakout Game</title>
+    <style>
+        body {
+            text-align: center;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background: #333;
+            display: block;
+            margin: 0 auto;
+        }
+        #restartBtn, #startBtn, #modeBtn1, #modeBtn2, #backBtn, #celebrateBtn {
+            display: none;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+        }
+        #celebration {
+            display: none;
+            color: gold;
+            font-size: 36px;
+            margin-top: 30px;
+        }
+        #confettiCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Score: <span id="score">0</span></h1>
+    <h2>Level: <span id="level">1</span></h2>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <h2 id="gameOver" style="display: none; color: red;">Game Over!</h2>
+    <h2 id="celebration" style="display: none;">Congratulations! You gooned!</h2> <!-- Celebration section -->
+    <button id="startBtn">Start Game</button>
+    <button id="modeBtn1">Game Mode 1</button>
+    <button id="modeBtn2">Game Mode 2</button>
+    <button id="restartBtn">Restart</button>
+    <button id="backBtn">Back</button> <!-- Back button -->
+    <button id="celebrateBtn" style="display: none;">Celebrate Again</button> <!-- Celebrate Again button -->
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("score");
+        const levelDisplay = document.getElementById("level");
+        const gameOverText = document.getElementById("gameOver");
+        const celebrationText = document.getElementById("celebration");
+        const restartBtn = document.getElementById("restartBtn");
+        const startBtn = document.getElementById("startBtn");
+        const modeBtn1 = document.getElementById("modeBtn1");
+        const modeBtn2 = document.getElementById("modeBtn2");
+        const backBtn = document.getElementById("backBtn");
+        const celebrateBtn = document.getElementById("celebrateBtn"); // Celebrate again button
+        const confettiCanvas = document.getElementById("confettiCanvas");
+        const confettiCtx = confettiCanvas.getContext("2d");
+
+        let paddleWidth = 100, paddleHeight = 10;
+        let paddleX = (canvas.width - paddleWidth) / 2;
+        let ballRadius = 10;
+        let ballX, ballY, ballSpeedX, ballSpeedY;
+        let rightPressed = false, leftPressed = false;
+        let bricks = [];
+        let brickRowCount, brickColumnCount;
+        let brickWidth = 75, brickHeight = 20, brickPadding = 10, brickOffsetTop = 30;
+        let score, level, gameOver;
+
+        // Cheat code tracking
+        let delKeyPressCount = 0;
+        let lastDelPressTime = 0;
+        const DEL_KEY_CODE = 46; // DEL key code
+        const DOUBLE_PRESS_INTERVAL = 500; // Time interval in milliseconds for detecting double press
+
+        function initGame() {
+            startBtn.style.display = "none";
+            modeBtn1.style.display = "none";
+            modeBtn2.style.display = "none";
+
+            level = 1;
+            setupLevel();
+        }
+
+        function setupLevel() {
+            ballX = Math.random() * (canvas.width - 2 * ballRadius) + ballRadius;
+            ballY = Math.random() * (canvas.height / 2) + canvas.height / 4;
+            ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * (3 + (level * 0.5));
+            ballSpeedY = -(3 + (level * 0.5));
+
+            score = 0;
+            gameOver = false;
+            brickRowCount = 3 + level;
+            brickColumnCount = 5 + Math.floor(level / 2);
+            bricks = [];
+
+            const totalBrickWidth = brickColumnCount * brickWidth + (brickColumnCount - 1) * brickPadding;
+            const startX = (canvas.width - totalBrickWidth) / 2;
+
+            for (let c = 0; c < brickColumnCount; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < brickRowCount; r++) {
+                    bricks[c][r] = { x: startX + c * (brickWidth + brickPadding), y: r * (brickHeight + brickPadding) + brickOffsetTop, status: 1 };
+                }
+            }
+
+            scoreDisplay.textContent = score;
+            levelDisplay.textContent = level;
+            gameOverText.style.display = "none";
+            celebrationText.style.display = "none"; // Hide celebration text
+            restartBtn.style.display = "none";
+            backBtn.style.display = "none";
+            celebrateBtn.style.display = "none"; // Hide celebrate again button
+            update();
+        }
+
+        document.addEventListener("keydown", keyDownHandler);
+        document.addEventListener("keyup", keyUpHandler);
+        restartBtn.addEventListener("click", restartGame);
+        startBtn.addEventListener("click", initGame);
+        backBtn.addEventListener("click", goBackToMenu); // Back button click event
+        celebrateBtn.addEventListener("click", restartGame); // Restart game from celebration
+
+        modeBtn1.addEventListener("click", () => {
+            alert("Game Mode 1 selected!");
+        });
+
+        modeBtn2.addEventListener("click", () => {
+            alert("Game Mode 2 selected!");
+        });
+
+        function keyDownHandler(e) {
+            if (e.keyCode === DEL_KEY_CODE) {
+                let currentTime = new Date().getTime();
+                if (currentTime - lastDelPressTime < DOUBLE_PRESS_INTERVAL) {
+                    delKeyPressCount++;
+                    if (delKeyPressCount === 2) {
+                        showCelebration();
+                    }
+                } else {
+                    delKeyPressCount = 1;
+                }
+                lastDelPressTime = currentTime;
+            }
+            if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
+            else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+        }
+
+        function keyUpHandler(e) {
+            if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
+            else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+        }
+
+        function drawBricks() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    let b = bricks[c][r];
+                    if (b.status === 1) {
+                        ctx.fillStyle = "#0095DD";
+                        ctx.fillRect(b.x, b.y, brickWidth, brickHeight);
+                    }
+                }
+            }
+        }
+
+        function collisionDetection() {
+            let bricksLeft = 0;
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    let b = bricks[c][r];
+                    if (b.status === 1) {
+                        bricksLeft++;
+                        if (ballX > b.x && ballX < b.x + brickWidth && ballY > b.y && ballY < b.y + brickHeight) {
+                            ballSpeedY = -ballSpeedY;
+                            b.status = 0;
+                            score++;
+                            scoreDisplay.textContent = score;
+                        }
+                    }
+                }
+            }
+            if (bricksLeft === 0) {
+                level++;
+                if (level > 3) {
+                    showFinalCelebration(); // If player reaches level 3, show final congratulations
+                } else {
+                    setupLevel();
+                }
+            }
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "red";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+        }
+
+        function update() {
+            if (gameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBricks();
+            drawBall();
+            drawPaddle();
+            collisionDetection();
+
+            if (ballX + ballSpeedX > canvas.width - ballRadius || ballX + ballSpeedX < ballRadius) ballSpeedX = -ballSpeedX;
+            if (ballY + ballSpeedY < ballRadius) ballSpeedY = -ballSpeedY;
+            else if (ballY + ballSpeedY > canvas.height - ballRadius) {
+                if (ballX > paddleX && ballX < paddleX + paddleWidth) ballSpeedY = -ballSpeedY;
+                else {
+                    gameOver = true;
+                    gameOverText.style.display = "block";
+                    restartBtn.style.display = "block";
+                    backBtn.style.display = "block";
+                }
+            }
+
+            if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += 7;
+            else if (leftPressed && paddleX > 0) paddleX -= 7;
+
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+            requestAnimationFrame(update);
+        }
+
+        function restartGame() {
+            setupLevel();
+            hideConfetti();
+        }
+
+        function showCelebration() {
+            gameOverText.style.display = "none"; // Hide game over message
+            celebrationText.style.display = "block"; // Show celebration message
+            restartBtn.style.display = "none"; // Hide restart button
+            celebrateBtn.style.display = "block"; // Show "celebrate again" button
+            startConfetti(); // Start confetti animation
+
+            // Stop confetti after 5 seconds
+            setTimeout(hideConfetti, 5000);
+        }
+
+        function showFinalCelebration() {
+            gameOverText.style.display = "none"; // Hide game over message
+            celebrationText.textContent = "Congratulations! You completed all levels!"; // Final congrats text
+            celebrationText.style.display = "block"; // Show final celebration message
+            restartBtn.style.display = "none"; // Hide restart button
+            celebrateBtn.style.display = "block"; // Show "celebrate again" button
+            startConfetti(); // Start confetti animation
+
+            // Stop confetti after 5 seconds
+            setTimeout(hideConfetti, 5000);
+        }
+
+        function startConfetti() {
+            confettiCanvas.style.display = "block"; // Show confetti canvas
+            const confettiPieces = [];
+            const colors = ["#ff0", "#f0f", "#0ff", "#ff4", "#f44"];
+
+            function createConfetti() {
+                let x = Math.random() * canvas.width;
+                let y = 0;
+                let size = Math.random() * 5 + 5;
+                let speedX = Math.random() * 4 - 2;
+                let speedY = Math.random() * 2 + 2;
+                let color = colors[Math.floor(Math.random() * colors.length)];
+                confettiPieces.push({ x, y, size, speedX, speedY, color });
+            }
+
+            function drawConfetti() {
+                confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                confettiPieces.forEach((piece, index) => {
+                    confettiCtx.beginPath();
+                    confettiCtx.arc(piece.x, piece.y, piece.size, 0, Math.PI * 2);
+                    confettiCtx.fillStyle = piece.color;
+                    confettiCtx.fill();
+                    piece.x += piece.speedX;
+                    piece.y += piece.speedY;
+
+                    // Remove confetti that has fallen off the screen
+                    if (piece.y > canvas.height) confettiPieces.splice(index, 1);
+                });
+
+                if (confettiPieces.length < 200) {
+                    createConfetti();
+                }
+
+                requestAnimationFrame(drawConfetti);
+            }
+
+            drawConfetti();
+        }
+
+        function hideConfetti() {
+            confettiCanvas.style.display = "none"; // Hide confetti canvas
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); // Clear the canvas
+        }
+
+        function goBackToMenu() {
+            startBtn.style.display = "block";
+            modeBtn1.style.display = "block";
+            modeBtn2.style.display = "block";
+            backBtn.style.display = "none";
+        }
+    </script>
+</body>
+</html>
