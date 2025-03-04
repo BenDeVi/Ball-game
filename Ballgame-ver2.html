@@ -46,15 +46,15 @@
     <h2>Level: <span id="level">1</span></h2>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <h2 id="gameOver" style="display: none; color: red;">Game Over!</h2>
-    <h2 id="celebration" style="display: none;">Congratulations! You gooned!</h2> <!-- Celebration section -->
+    <h2 id="celebration" style="display: none;">Congratulations! You gooned!</h2> <!-- Cheat Celebration section -->
     <button id="startBtn">Start Game</button>
     <button id="modeBtn1">Game Mode 1</button>
     <button id="modeBtn2">Game Mode 2</button>
     <button id="restartBtn">Restart</button>
     <button id="backBtn">Back</button> <!-- Back button -->
-    <button id="celebrateBtn" style="display: none;">Celebrate Again</button> <!-- Celebrate Again button -->
+    <button id="celebrateBtn" style="display: none;">Celebrate Again</button> <!-- Real Celebration-->
 
-    <!-- Confetti Canvas -->
+    
     <canvas id="confettiCanvas"></canvas>
 
     <script>
@@ -69,7 +69,7 @@
         const modeBtn1 = document.getElementById("modeBtn1");
         const modeBtn2 = document.getElementById("modeBtn2");
         const backBtn = document.getElementById("backBtn");
-        const celebrateBtn = document.getElementById("celebrateBtn"); // Celebrate again button
+        const celebrateBtn = document.getElementById("celebrateBtn"); 
         const confettiCanvas = document.getElementById("confettiCanvas");
         const confettiCtx = confettiCanvas.getContext("2d");
 
@@ -87,7 +87,7 @@
         let delKeyPressCount = 0;
         let lastDelPressTime = 0;
         const DEL_KEY_CODE = 46; // DEL key code
-        const DOUBLE_PRESS_INTERVAL = 500; // Time interval in milliseconds for detecting double press
+        const DOUBLE_PRESS_INTERVAL = 500; // Time interval in milliseconds
 
         function initGame() {
             startBtn.style.display = "none";
@@ -134,7 +134,7 @@
         document.addEventListener("keyup", keyUpHandler);
         restartBtn.addEventListener("click", restartGame);
         startBtn.addEventListener("click", initGame);
-        backBtn.addEventListener("click", goBackToMenu); // Back button click event
+        backBtn.addEventListener("click", goBackToMenu); // Back button click
         celebrateBtn.addEventListener("click", restartGame); // Restart game from celebration
 
         modeBtn1.addEventListener("click", () => {
@@ -198,7 +198,7 @@
             if (bricksLeft === 0) {
                 level++;
                 if (level > 3) {
-                    showFinalCelebration(); // If player reaches level 3, show final congratulations
+                    showFinalCelebration(); // If player reaches level 3 show final congratulations
                 } else {
                     setupLevel();
                 }
@@ -252,30 +252,30 @@
         }
 
         function showCelebration() {
-            gameOverText.style.display = "none"; // Hide game over message
-            celebrationText.style.display = "block"; // Show celebration message
-            restartBtn.style.display = "none"; // Hide restart button
-            celebrateBtn.style.display = "block"; // Show "celebrate again" button
-            startConfetti(); // Start confetti animation
+            gameOverText.style.display = "none";
+            celebrationText.style.display = "block"; 
+            restartBtn.style.display = "none";
+            celebrateBtn.style.display = "block"; 
+            startConfetti(); 
 
             // Stop confetti after 5 seconds
             setTimeout(hideConfetti, 5000);
         }
 
         function showFinalCelebration() {
-            gameOverText.style.display = "none"; // Hide game over message
-            celebrationText.textContent = "Congratulations! You completed all levels!"; // Final congrats text
-            celebrationText.style.display = "block"; // Show final celebration message
-            restartBtn.style.display = "none"; // Hide restart button
-            celebrateBtn.style.display = "block"; // Show "celebrate again" button
-            startConfetti(); // Start confetti animation
+            gameOverText.style.display = "none"; 
+            celebrationText.textContent = "Congratulations! You completed all levels!"; 
+            celebrationText.style.display = "block"; 
+            restartBtn.style.display = "none"; 
+            celebrateBtn.style.display = "block"; 
+            startConfetti(); 
 
             // Stop confetti after 5 seconds
             setTimeout(hideConfetti, 5000);
         }
 
         function startConfetti() {
-            confettiCanvas.style.display = "block"; // Show confetti canvas
+            confettiCanvas.style.display = "block"; 
             const confettiPieces = [];
             const colors = ["#ff0", "#f0f", "#0ff", "#ff4", "#f44"];
 
@@ -299,7 +299,7 @@
                     piece.x += piece.speedX;
                     piece.y += piece.speedY;
 
-                    // Remove confetti that has fallen off the screen
+              
                     if (piece.y > canvas.height) confettiPieces.splice(index, 1);
                 });
 
@@ -314,8 +314,8 @@
         }
 
         function hideConfetti() {
-            confettiCanvas.style.display = "none"; // Hide confetti canvas
-            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); // Clear the canvas
+            confettiCanvas.style.display = "none"; 
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); 
         }
 
         function goBackToMenu() {
